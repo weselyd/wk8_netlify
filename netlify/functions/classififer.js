@@ -4,7 +4,9 @@ const cors = require('cors');
 const OPENAIKEY = process.env.OPENAI_API_KEY;  // Ensure you set this environment variable with your OpenAI key
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['*'] // Add your allowed origins here
+}));
 app.use(express.json({ limit: '10mb' })); // Allow larger payloads for base64 images
 
 // Initialize OpenAI client
