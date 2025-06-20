@@ -5,9 +5,10 @@ const OPENAIKEY = process.env.OPENAI_API_KEY;  // Ensure you set this environmen
 
 const app = express();
 app.use(cors({
-  origin: ['*'] // Add your allowed origins here
+  origin: '*' // Add your allowed origins here
 }));
 app.use(express.json({ limit: '10mb' })); // Allow larger payloads for base64 images
+app.options('*', cors()); // Enable preflight for all routes
 
 // Initialize OpenAI client
 const openai = new OpenAI({
