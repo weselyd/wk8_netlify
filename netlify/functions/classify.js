@@ -4,19 +4,6 @@ const OPENAIKEY = process.env.OPENAI_KEY; // Ensure this is set in Netlify env v
 const openai = new OpenAI({ apiKey: OPENAIKEY });
 
 exports.handler = async (event) => {
-  // Allow only POST
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: {
-        'Allow': 'POST',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
-  }
-
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -27,6 +14,19 @@ exports.handler = async (event) => {
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
       body: '',
+    };
+  }
+
+  // Allow only POST
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Allow': 'POST',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
 
