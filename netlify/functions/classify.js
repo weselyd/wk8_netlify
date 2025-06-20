@@ -1,6 +1,7 @@
 const express = require('express');
 const { OpenAI } = require('openai');
 const cors = require('cors');
+const serverless = require('serverless-http'); // <-- Netlify requires serverless-http for Lambda functions
 const OPENAIKEY = process.env.OPENAI_KEY;  // Ensure you set this environment variable with your OpenAI key
 
 const app = express();
@@ -77,3 +78,5 @@ app.post('/classify', async (req, res) => { // Handle user's POST request - imag
         res.status(500).json({ error: error.message });
     }
 });
+
+module.exports.handler = serverless(app); // <-- Export the handler
