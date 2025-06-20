@@ -1,82 +1,105 @@
-const express = require('express');
 const { OpenAI } = require('openai');
-const cors = require('cors');
-const serverless = require('serverless-http'); // <-- Netlify requires serverless-http for Lambda functions
-const OPENAIKEY = process.env.OPENAI_KEY;  // Ensure you set this environment variable with your OpenAI key
 
-const app = express();
-app.use(cors({
-  origin: '*' // Add your allowed origins here
-}));
-app.use(express.json({ limit: '10mb' })); // Allow larger payloads for base64 images
-app.options('*', cors()); // Enable preflight for all routes
+const OPENAIKEY = process.env.OPENAI_KEY; // Ensure this is set in Netlify env vars
+const openai = new OpenAI({ apiKey: OPENAIKEY });
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: OPENAIKEY // Replace with your OpenAI API key
-});
+exports.handler = async (event) => {
+  // Allow only POST
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Allow': 'POST',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
+    };
+  }
 
-app.post('/', async (req, res) => { // <-- Change from '/classify' to '/'
-    const { image, labels } = req.body;
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+      body: '',
+    };
+  }
+
+  try {
+    const { image, labels } = JSON.parse(event.body);
+
     if (!image || !labels) {
-        return res.status(400).json({ error: 'Image and labels are required' });
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Image and labels are required' }),
+      };
     }
 
-    try {  // Call OpenAI Vision API
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-                {
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Classify the cloud in the image as one of the following types: ${labels.join(', ')}. Return a JSON object with a "labels" array, each item having "name" and "score" properties (scores as decimals summing to 1). Do not wrap the JSON in Markdown or code blocks. Example: {"labels": [{"name": "cumulus", "score": 0.85}, {"name": "stratus", "score": 0.10}, {"name": "cirrus", "score": 0.05}]}`
-                        },
-                        {
-                            type: 'image_url',
-                            image_url: {
-                                url: `data:image/jpeg;base64,${image}`
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens: 100
-        });
-
-        // Extract the response content
-        const resultText = response.choices[0].message.content.trim();
-        console.log('Raw OpenAI response:', resultText);
-
-        // Remove Markdown code blocks if present
-        const cleanedText = resultText.replace(/```json\n|```/g, '').trim();
-
-        // Parse the cleaned response
-        let result;
-        try {
-            result = JSON.parse(cleanedText);
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            throw new Error(`Invalid image: ${cleanedText}`);
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Classify the cloud in the image as one of the following types: ${labels.join(', ')}. Return a JSON object with a "labels" array, each item having "name" and "score" properties (scores as decimals summing to 1). Do not wrap the JSON in Markdown or code blocks. Example: {"labels": [{"name": "cumulus", "score": 0.85}, {"name": "stratus", "score": 0.10}, {"name": "cirrus", "score": 0.05}]}`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${image}`
+              }
+            }
+          ]
         }
+      ],
+      max_tokens: 100
+    });
 
-        // Validate response structure
-        if (!result.labels || !Array.isArray(result.labels)) {
-            throw new Error('Invalid response format: Expected "labels" array');
-        }
+    const resultText = response.choices[0].message.content.trim();
+    const cleanedText = resultText.replace(/```json\n|```/g, '').trim();
 
-        // Verify scores sum to approximately 1
-        const totalScore = result.labels.reduce((sum, label) => sum + (label.score || 0), 0);
-        if (Math.abs(totalScore - 1) > 0.01) {
-            console.warn('Scores do not sum to 1:', totalScore);
-        }
-
-        res.json(result);
-    } catch (error) {
-        console.error('OpenAI API error:', error);
-        res.status(500).json({ error: error.message });
+    let result;
+    try {
+      result = JSON.parse(cleanedText);
+    } catch (parseError) {
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: `Invalid image: ${cleanedText}` }),
+      };
     }
-});
 
-module.exports.handler = serverless(app); // <-- Export the handler
+    if (!result.labels || !Array.isArray(result.labels)) {
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid response format: Expected "labels" array' }),
+      };
+    }
+
+    const totalScore = result.labels.reduce((sum, label) => sum + (label.score || 0), 0);
+    if (Math.abs(totalScore - 1) > 0.01) {
+      // Optionally log or handle this warning
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify(result),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+};
