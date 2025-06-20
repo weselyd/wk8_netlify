@@ -16,7 +16,7 @@ const openai = new OpenAI({
     apiKey: OPENAIKEY // Replace with your OpenAI API key
 });
 
-app.post('/classify', async (req, res) => { // Handle user's POST request - image and labels
+app.post('/', async (req, res) => { // <-- Change from '/classify' to '/'
     const { image, labels } = req.body;
     if (!image || !labels) {
         return res.status(400).json({ error: 'Image and labels are required' });
