@@ -4,8 +4,7 @@ const OPENAIKEY = process.env.OPENAI_KEY; // Ensure this is set in Netlify env v
 const openai = new OpenAI({ apiKey: OPENAIKEY });
 
 exports.handler = async (event) => {
-  // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === 'OPTIONS') { // Handles CORS preflight requests
     return {
       statusCode: 200,
       headers: {
@@ -17,8 +16,7 @@ exports.handler = async (event) => {
     };
   }
 
-  // Allow only POST
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod !== 'POST') { // Blocks anything that is not a POST request
     return {
       statusCode: 405,
       headers: {
@@ -30,10 +28,10 @@ exports.handler = async (event) => {
     };
   }
 
-  try {
-    const { image, labels } = JSON.parse(event.body);
+  try { // Now that we have filtered out invalid request types, try to parse the request body and handle the classification
+    const { image, labels } = JSON.parse(event.body);  // Creates a JSON object from the request body
 
-    if (!image || !labels) {
+    if (!image || !labels) { // Inspects image and labels to ensure they are present
       return {
         statusCode: 400,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -41,7 +39,7 @@ exports.handler = async (event) => {
       };
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({ // Creates a chat completion using OpenAI's API and saves as response variable
       model: 'gpt-4o',
       messages: [
         {
@@ -49,7 +47,7 @@ exports.handler = async (event) => {
           content: [
             {
               type: 'text',
-              text: `Classify the cloud in the image as one of the following types: ${labels.join(', ')}. Return a JSON object with a "labels" array, each item having "name" and "score" properties (scores as decimals summing to 1). Do not wrap the JSON in Markdown or code blocks. Example: {"labels": [{"name": "cumulus", "score": 0.85}, {"name": "stratus", "score": 0.10}, {"name": "cirrus", "score": 0.05}]}`
+              text: `Classify the cloud in the image as one of the following types: ${labels.join(', ')}. Return a JSON object with a "labels" array, each item having "name" and "score" properties (scores as decimals summing to 1). Example: {"labels": [{"name": "cumulus", "score": 0.85}, {"name": "stratus", "score": 0.10}, {"name": "cirrus", "score": 0.05}]}`
             },
             {
               type: 'image_url',
@@ -63,8 +61,8 @@ exports.handler = async (event) => {
       max_tokens: 100
     });
 
-    const resultText = response.choices[0].message.content.trim();
-    const cleanedText = resultText.replace(/```json\n|```/g, '').trim();
+    const resultText = response.choices[0].message.content.trim();  // Extracts the text content from the response
+    const cleanedText = resultText.replace(/```json\n|```/g, '').trim();  // Cleans the response text to ensure it's valid JSON, if not later use text to diplay error to user
 
     let result;
     try {
@@ -77,18 +75,18 @@ exports.handler = async (event) => {
       };
     }
 
-    if (!result.labels || !Array.isArray(result.labels)) {
+    if (!result.labels || !Array.isArray(result.labels)) { // Validates that the result contains a "labels" array
       return {
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Invalid response format: Expected "labels" array' }),
       };
     }
-
+    /*
     const totalScore = result.labels.reduce((sum, label) => sum + (label.score || 0), 0);
     if (Math.abs(totalScore - 1) > 0.01) {
       // Optionally log or handle this warning
-    }
+    } */
 
     return {
       statusCode: 200,
