@@ -1,7 +1,7 @@
 const express = require('express');
 const { OpenAI } = require('openai');
 const cors = require('cors');
-const OPENAIKEY = process.env.OPENAI_API_KEY;  // Ensure you set this environment variable with your OpenAI key
+const OPENAIKEY = process.env.OPENAI_KEY;  // Ensure you set this environment variable with your OpenAI key
 
 const app = express();
 app.use(cors({
