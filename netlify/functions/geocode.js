@@ -9,7 +9,6 @@ const owDirectGeocode = async (city) => {
   );
   if (!response.ok) throw new Error('Location lookup failed');
   const data = await response.json();
-  //if (!data.length) throw new Error('City not found');
   return data;
 };
 
