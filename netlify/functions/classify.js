@@ -62,15 +62,16 @@ exports.handler = async (event) => {
     });
 
     const resultText = response.choices[0].message.content.trim();  // Extracts the text content from the response
-    
+    const cleanedText = resultText.replace(/```json\n|```/g, '').trim();  // Cleans the response text to ensure it's valid JSON, if not later use text to diplay error to user
+
     let result;
     try {
-      result = JSON.parse(resultText);
+      result = JSON.parse(cleanedText);
     } catch (parseError) {
       return {
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: `Invalid image: ${resultText}` }),
+        body: JSON.stringify({ error: `Invalid image: ${cleanedText}` }),
       };
     }
 
