@@ -45,7 +45,7 @@ exports.handler = async (event) => {
 
   try {
     const { input } = JSON.parse(event.body);  // Parses the request body to extract the input prompt
-    if (!inputt) {
+    if (!input) {
       return {
         statusCode: 400,
         headers: { 'Access-Control-Allow-Origin': '*' },
