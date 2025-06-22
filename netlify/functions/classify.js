@@ -62,16 +62,15 @@ exports.handler = async (event) => {
     });
 
     const resultText = response.choices[0].message.content.trim();  // Extracts the text content from the response
-    const cleanedText = resultText.replace(/```json\n|```/g, '').trim();  // Cleans the response text to ensure it's valid JSON, if not later use text to diplay error to user
-
+    
     let result;
     try {
-      result = JSON.parse(cleanedText);
+      result = JSON.parse(resultText);
     } catch (parseError) {
       return {
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: `Invalid image: ${cleanedText}` }),
+        body: JSON.stringify({ error: `Invalid image: ${resultText}` }),
       };
     }
 
@@ -82,11 +81,6 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'Invalid response format: Expected "labels" array' }),
       };
     }
-    /*
-    const totalScore = result.labels.reduce((sum, label) => sum + (label.score || 0), 0);
-    if (Math.abs(totalScore - 1) > 0.01) {
-      // Optionally log or handle this warning
-    } */
 
     return {
       statusCode: 200,
