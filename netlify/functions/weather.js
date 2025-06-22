@@ -54,6 +54,14 @@ exports.handler = async (event) => {
 
   try {  // Try to fetch the weather for the provided city
     const data = await owGetCurrentWeather(lat, lon);
+        // Check for {"error":"City not found"}
+        if (data && data.error === "City not found") {
+            return {
+                statusCode: 200,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ error: "City not found" }),
+            };
+        }
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
@@ -67,3 +75,29 @@ exports.handler = async (event) => {
     };
   };
 };
+
+
+    try {  // Try to fetch the weather for the provided city
+        const data = await owGetCurrentWeather(lat, lon);
+
+        // Check for {"error":"City not found"}
+        if (data && data.error === "City not found") {
+            return {
+                statusCode: 200,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ error: "City not found" }),
+            };
+        }
+
+        return {
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify(data),
+        };
+    } catch (error) {  // Catch any errors that occur during the fetch
+        return {
+            statusCode: 500,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: error.message }),
+        };
+    };
