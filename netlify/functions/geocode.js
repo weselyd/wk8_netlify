@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
   try {  // Try to fetch the geocode data for the provided city
     const data = await owDirectGeocode(city);
-    if (data && data.error === "City not found") {  // Check for {"error":"City not found"}
+    if (Array.isArray(data) && data.length === 0) {  // If city is not found, OpenWeatherMap returns an empty array
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*' },
