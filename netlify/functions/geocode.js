@@ -14,8 +14,7 @@ const owDirectGeocode = async (city) => {
 };
 
 exports.handler = async (event) => {
-  // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === 'OPTIONS') {  // Handle CORS preflight requests
     return {
       statusCode: 200,
       headers: {
@@ -27,7 +26,7 @@ exports.handler = async (event) => {
     };
   }
 
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'GET') {  // Block any other type of request that is not a GET
     return {
       statusCode: 405,
       headers: {
@@ -39,8 +38,8 @@ exports.handler = async (event) => {
     };
   }
 
-  const city = event.queryStringParameters && event.queryStringParameters.city;
-  if (!city) {
+  const city = event.queryStringParameters && event.queryStringParameters.city;  // Extract city parameter from query string
+  if (!city) {  // Check if city parameter is provided
     return {
       statusCode: 400,
       headers: { 'Access-Control-Allow-Origin': '*' },
@@ -48,14 +47,14 @@ exports.handler = async (event) => {
     };
   }
 
-  try {
+  try {  // Try to fetch the geocode data for the provided city
     const data = await owDirectGeocode(city);
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify(data),
     };
-  } catch (error) {
+  } catch (error) {  // Catch any errors that occur during the fetch
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
